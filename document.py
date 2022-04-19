@@ -4,4 +4,4 @@ class Document:
     """
     Represents simulation state, collection of objects 
     """
-    size = np.array([20,15])
+    size = np.array([15,10])

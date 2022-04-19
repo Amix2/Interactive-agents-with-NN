@@ -3,7 +3,6 @@ from typing import Tuple
 import pygame, sys
 from pygame.locals import *
 from pygame import Rect
-import dataclasses
 
 from document import Document
 
@@ -60,6 +59,11 @@ class Screen:
 
         self.DrawAgent(1, 2, boardRect)
 
+        self.DrawTable(2,2, 3,2, boardRect)
+
+        self.DrawChair(4, 2, boardRect)
+        
+
     def DrawCellLines(self, boardRect : Rect):
         (cellsX, cellsY) = self.doc.size
         assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
@@ -83,6 +87,29 @@ class Screen:
         agentRect = Rect(boardRect.x + X * cellSize, boardRect.y + Y * cellSize, cellSize, cellSize)
         self.DrawAgentInRect(agentRect)
 
+    def DrawTable(self, X1 : int, Y1 : int, X2 : int, Y2 : int, boardRect : Rect) -> None:
+        (cellsX, cellsY) = self.doc.size
+        assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
+        cellSize = int(min(boardRect.width / cellsX, boardRect.height / cellsY))
+        Xmin = min(X1, X2)
+        Ymin = max(Y1, Y2)
+        Ymin = cellsY - Ymin -1   # Y flip
+        if(X1 != X2):
+            tableRect = Rect(boardRect.x + Xmin * cellSize, boardRect.y + Ymin * cellSize, cellSize * 2 , cellSize)
+        else:
+            tableRect = Rect(boardRect.x + Xmin * cellSize, boardRect.y + Ymin * cellSize, cellSize, cellSize * 2)
+
+        self.DrawTableInRect(tableRect)
+
+    def DrawChair(self, X : int, Y : int, boardRect : Rect) -> None:
+        (cellsX, cellsY) = self.doc.size
+        assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
+        cellSize = int(min(boardRect.width / cellsX, boardRect.height / cellsY))
+        Y = cellsY - Y -1   # Y flip
+
+        chairRect = Rect(boardRect.x + X * cellSize, boardRect.y + Y * cellSize, cellSize, cellSize)
+        self.DrawChairInRect(chairRect)
+
     def GetScreenSize(self) -> Tuple[int, int]:
         return self.screen.get_size()
         
@@ -97,5 +124,18 @@ class Screen:
             (rect.right - off, rect.bottom - off),
             (topCenterX, rect.top + off)
         )
-        pygame.draw.polygon(self.screen, red, points)
+        agentColor = (255, 0, 0)
+        pygame.draw.polygon(self.screen, agentColor, points)
+
+    def DrawTableInRect(self, rect : Rect) -> None:
+        deflate = -0.1
+        rect = rect.inflate(deflate * rect.width, deflate * rect.height)
+        tableColor = (180, 20, 20)
+        pygame.draw.ellipse(self.screen, tableColor, rect)
+
+    def DrawChairInRect(self, rect : Rect) -> None:
+        deflate = -0.4
+        rect = rect.inflate(deflate * rect.width, deflate * rect.height)
+        chairColor = (100, 0, 0)
+        pygame.draw.ellipse(self.screen, chairColor, rect)
 
