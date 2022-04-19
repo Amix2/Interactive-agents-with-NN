@@ -1,4 +1,3 @@
-from math import pi
 from typing import Tuple
 import pygame, sys
 from pygame.locals import *
@@ -19,10 +18,8 @@ class Screen:
     """
     # good pygame tutorial https://riptutorial.com/pygame
 
-    def __init__(self, doc : Document) -> None:
+    def __init__(self) -> None:
         pygame.init()
-
-        self.doc = doc
 
         self.fpsClock = pygame.time.Clock()
 
@@ -33,10 +30,10 @@ class Screen:
         pygame.display.set_caption('Interactive agents') # Name for the window
         self.screen.fill(background_colour) #This syntax fills the background colour
 
-    def Update(self) -> None:
+    def Update(self, doc : Document) -> None:
         self.screen.fill(white)
 
-        self.DrawDoc()
+        self.DrawDoc(doc)
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -47,25 +44,25 @@ class Screen:
         self.fpsClock.tick(FPS)
 
 
-    def DrawDoc(self):
+    def DrawDoc(self, doc : Document):
         (screenX, screenY) = self.GetScreenSize()
-        (cellsX, cellsY) = self.doc.size
+        (cellsX, cellsY) = doc.size
         cellSize = int(min(screenX / cellsX, screenY / cellsY))
         boardRect = Rect(0,0, cellSize * cellsX, cellSize * cellsY)
 
         self.DrawRect(boardRect, (200,200,255))
 
-        self.DrawCellLines(boardRect)
+        self.DrawCellLines(boardRect, doc)
+        for agent in doc.agents:
+            self.DrawAgent(agent.x, agent.y, boardRect, doc)
 
-        self.DrawAgent(1, 2, boardRect)
+        self.DrawTable(2,2, 3,2, boardRect, doc)
 
-        self.DrawTable(2,2, 3,2, boardRect)
-
-        self.DrawChair(4, 2, boardRect)
+        self.DrawChair(4, 2, boardRect, doc)
         
 
-    def DrawCellLines(self, boardRect : Rect):
-        (cellsX, cellsY) = self.doc.size
+    def DrawCellLines(self, boardRect : Rect, doc : Document):
+        (cellsX, cellsY) = doc.size
         assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
 
         cellSize = int(min(boardRect.width / cellsX, boardRect.height / cellsY))
@@ -78,8 +75,8 @@ class Screen:
 
         
     
-    def DrawAgent(self, X : int, Y : int, boardRect : Rect) -> None:
-        (cellsX, cellsY) = self.doc.size
+    def DrawAgent(self, X : int, Y : int, boardRect : Rect, doc : Document) -> None:
+        (cellsX, cellsY) = doc.size
         assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
         cellSize = int(min(boardRect.width / cellsX, boardRect.height / cellsY))
         Y = cellsY - Y -1   # Y flip
@@ -87,8 +84,8 @@ class Screen:
         agentRect = Rect(boardRect.x + X * cellSize, boardRect.y + Y * cellSize, cellSize, cellSize)
         self.DrawAgentInRect(agentRect)
 
-    def DrawTable(self, X1 : int, Y1 : int, X2 : int, Y2 : int, boardRect : Rect) -> None:
-        (cellsX, cellsY) = self.doc.size
+    def DrawTable(self, X1 : int, Y1 : int, X2 : int, Y2 : int, boardRect : Rect, doc : Document) -> None:
+        (cellsX, cellsY) = doc.size
         assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
         cellSize = int(min(boardRect.width / cellsX, boardRect.height / cellsY))
         Xmin = min(X1, X2)
@@ -101,8 +98,8 @@ class Screen:
 
         self.DrawTableInRect(tableRect)
 
-    def DrawChair(self, X : int, Y : int, boardRect : Rect) -> None:
-        (cellsX, cellsY) = self.doc.size
+    def DrawChair(self, X : int, Y : int, boardRect : Rect, doc : Document) -> None:
+        (cellsX, cellsY) = doc.size
         assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
         cellSize = int(min(boardRect.width / cellsX, boardRect.height / cellsY))
         Y = cellsY - Y -1   # Y flip
