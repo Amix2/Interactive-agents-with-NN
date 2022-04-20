@@ -20,15 +20,21 @@ class Document:
 
         ##############################################
         # TEMP
-        Xmove = randrange(-1,2,1)
-        Ymove = randrange(-1,2,1)
+        Xmove = randrange(-1, 2, 1)
+        Ymove = randrange(-1, 2, 1)
         XNew = agent.x + Xmove
         YNew = agent.y + Ymove
 
-        if(XNew < 0): XNew = 0
-        if(XNew >= self.size[0]): XNew = self.size[0]-1
-        if(YNew < 0): YNew = 0
-        if(YNew >= self.size[1]): YNew = self.size[1]-1
+        # only allow movement within borders
+        if XNew < 0:
+            XNew = 0
+        if XNew >= self.size[0]:
+            XNew = self.size[0]-1
+        if YNew < 0:
+            YNew = 0
+        if YNew >= self.size[1]:
+            YNew = self.size[1]-1
+
         self.grid[agent.x][agent.y] = None
         self.grid[XNew][YNew] = agent
         agent.x = XNew
@@ -38,7 +44,7 @@ class Document:
         ##############################################
 
     def AddAgent(self, x: int, y: int) -> bool:
-        if(self.grid[x][y] != None):
+        if self.grid[x][y] is not None:
             return False
 
         agent = Agent(x, y)
