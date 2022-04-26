@@ -2,6 +2,7 @@ from random import randrange
 import numpy as np
 from action import Action
 from simObj import Agent, Chair, Table
+from cellCodes import CellCodes
 
 class Document:
     """
@@ -34,9 +35,21 @@ class Document:
         self.grid[XNew][YNew] = agent
         agent.x = XNew
         agent.y = YNew
+
+        agent.SetLastAction(action) # run only if true
         return True
         # TEMP
         ##############################################
+
+
+    # returns cell code for given x,y from CellCodes list
+    def GetCellCode(self, x: int, y: int) -> int:
+        if(x < 0 or y < 0 or x >= self.size[0] or y >= self.size[1]):
+            return CellCodes.Inaccessible
+        cellObj = self.grid[x][y]
+        if(cellObj == None):
+            return CellCodes.Empty
+        return cellObj.GetCode(x, y)
 
     def AddAgent(self, x: int, y: int) -> bool:
         if(self.grid[x][y] != None):
@@ -47,6 +60,7 @@ class Document:
         self.agents.append(agent)
         return True
 
+
     def AddTable(self, x1: int, y1: int, x2: int, y2: int) -> bool:
         if(self.grid[x1][y1] != None):
             return False
@@ -55,12 +69,12 @@ class Document:
         if(abs(x1-x2) + abs(y1-y2) != 1):
             return False
 
-        
         table = Table(x1, y1, x2, y2)
         self.grid[x1][y1] = table
         self.grid[x2][y2] = table
         self.tables.append(table)
         return True
+
 
     def AddChair(self, x: int, y: int) -> bool:
         if(self.grid[x][y] != None):

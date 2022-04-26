@@ -1,6 +1,6 @@
 from action import Action
 from document import Document
-
+from agentView import AgentView
 
 class Model:
 
@@ -10,4 +10,6 @@ class Model:
     def Step(self, doc : Document) -> None:
         for agent in doc.agents:
             action = Action.MakeRandom()
+            agentView = AgentView(doc, agent.x, agent.y)
+            #print(agentView.ToPrettyString())
             doc.ApplyActionToAgent(agent, None)

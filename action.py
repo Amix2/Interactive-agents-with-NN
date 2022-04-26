@@ -11,8 +11,8 @@ class Action:
     _directed_types = [grab, move]
 
     north = "N"
-    west = "W"
-    east = "E"
+    west  = "W"
+    east  = "E"
     south = "S"
 
     _valid_directions = [north, west, east, south]
