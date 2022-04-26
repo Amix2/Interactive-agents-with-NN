@@ -10,6 +10,8 @@ def main():
     screen = Screen()
     model = Model()
     doc.AddAgent(5,5)
+    doc.AddChair(2,2)
+    doc.AddTable(3,3, 3, 4)
     nextSimStepTime = 0
     while True: # the main game loop
         nowTime = time.time()

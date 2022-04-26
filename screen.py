@@ -56,10 +56,12 @@ class Screen:
         for agent in doc.agents:
             self.DrawAgent(agent.x, agent.y, boardRect, doc)
 
-        self.DrawTable(2,2, 3,2, boardRect, doc)
+        for table in doc.tables:
+            self.DrawTable(table.x1, table.y1, table.x2, table.y2, boardRect, doc)
 
-        self.DrawChair(4, 2, boardRect, doc)
-        
+        for chair in doc.chairs:
+            self.DrawChair(chair.x, chair.y, boardRect, doc)
+
 
     def DrawCellLines(self, boardRect : Rect, doc : Document):
         (cellsX, cellsY) = doc.size

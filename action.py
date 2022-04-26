@@ -1,5 +1,5 @@
 from typing import Union
-
+import random
 
 class Action:
     grab = "G"
@@ -29,3 +29,15 @@ class Action:
 
         self.type = type
         self.direction = direction
+
+    @staticmethod
+    def MakeRandom():
+        while True:
+            try:
+                aType = random.choice(Action._valid_types)        
+                aDir = random.choice(Action._directed_types + [None])
+                action = Action(aType, aDir)
+            except:
+                pass
+            else:
+                return action
