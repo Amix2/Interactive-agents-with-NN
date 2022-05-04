@@ -14,10 +14,6 @@ class ISimObj:
         raise NotImplementedError
 
 
-class Empty(ISimObj):
-    def GetCode(self, x: int, y: int) -> int:
-        return CellCodes.Empty
-
 class Agent(ISimObj):
     def __init__(self, x: int, y: int) -> None:
         super().__init__()
