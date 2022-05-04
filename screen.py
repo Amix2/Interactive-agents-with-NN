@@ -1,9 +1,12 @@
 from typing import Tuple
 import pygame, sys
+from pygame import color
 from pygame.locals import *
 from pygame import Rect
 
 from document import Document
+from simObj import Agent
+from action import Action
 
 FPS = 30 #frames per second setting
 white = (255, 255, 255)
@@ -54,7 +57,7 @@ class Screen:
 
         self.DrawCellLines(boardRect, doc)
         for agent in doc.agents:
-            self.DrawAgent(agent.x, agent.y, boardRect, doc)
+            self.DrawAgent(agent, boardRect, doc)
 
         for table in doc.tables:
             self.DrawTable(table.x1, table.y1, table.x2, table.y2, boardRect, doc)
@@ -77,14 +80,32 @@ class Screen:
 
         
     
-    def DrawAgent(self, X : int, Y : int, boardRect : Rect, doc : Document) -> None:
+    def DrawAgent(self, agent: Agent, boardRect : Rect, doc : Document) -> None:
         (cellsX, cellsY) = doc.size
         assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
         cellSize = int(min(boardRect.width / cellsX, boardRect.height / cellsY))
+        X = agent.x
+        Y = agent.y
         Y = cellsY - Y -1   # Y flip
 
         agentRect = Rect(boardRect.x + X * cellSize, boardRect.y + Y * cellSize, cellSize, cellSize)
         self.DrawAgentInRect(agentRect)
+
+        last_action = agent.last_action
+        if(last_action is not None and last_action.type == Action.grab):
+            sX = agentRect.centerx
+            sY = agentRect.centery
+            if(last_action.direction == Action.north):
+                grabLineEnd = [sX,sY - cellSize]
+            elif(last_action.direction == Action.east):
+                grabLineEnd = [sX + cellSize, sY]
+            elif(last_action.direction == Action.south):
+                grabLineEnd = [sX,sY + cellSize]
+            elif(last_action.direction == Action.west):
+                grabLineEnd = [sX - cellSize, sY]
+            
+            self.DrawAgentGrab([sX,sY], grabLineEnd);
+
 
     def DrawTable(self, X1 : int, Y1 : int, X2 : int, Y2 : int, boardRect : Rect, doc : Document) -> None:
         (cellsX, cellsY) = doc.size
@@ -100,6 +121,7 @@ class Screen:
 
         self.DrawTableInRect(tableRect)
 
+
     def DrawChair(self, X : int, Y : int, boardRect : Rect, doc : Document) -> None:
         (cellsX, cellsY) = doc.size
         assert int(boardRect.width / cellsX) == int(boardRect.height / cellsY)
@@ -109,11 +131,14 @@ class Screen:
         chairRect = Rect(boardRect.x + X * cellSize, boardRect.y + Y * cellSize, cellSize, cellSize)
         self.DrawChairInRect(chairRect)
 
+
     def GetScreenSize(self) -> Tuple[int, int]:
         return self.screen.get_size()
         
+
     def DrawRect(self, rect : Rect, color) -> None:
         pygame.draw.rect(self.screen, color, rect)
+
 
     def DrawAgentInRect(self, rect : Rect) -> None:
         off = int(rect.width / 10)
@@ -126,11 +151,17 @@ class Screen:
         agentColor = (255, 0, 0)
         pygame.draw.polygon(self.screen, agentColor, points)
 
+    def DrawAgentGrab(self, start, end) -> None:
+        agentColor = (255, 150, 0)
+        pygame.draw.line(self.screen, agentColor, start, end, 3);
+
+
     def DrawTableInRect(self, rect : Rect) -> None:
         deflate = -0.1
         rect = rect.inflate(deflate * rect.width, deflate * rect.height)
         tableColor = (180, 20, 20)
         pygame.draw.ellipse(self.screen, tableColor, rect)
+
 
     def DrawChairInRect(self, rect : Rect) -> None:
         deflate = -0.4

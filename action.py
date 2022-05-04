@@ -35,7 +35,7 @@ class Action:
         while True:
             try:
                 aType = random.choice(Action._valid_types)        
-                aDir = random.choice(Action._directed_types + [None])
+                aDir = random.choice(Action._valid_directions + [None])
                 action = Action(aType, aDir)
             except:
                 pass

@@ -11,5 +11,4 @@ class Model:
         for agent in doc.agents:
             action = Action.MakeRandom()
             agentView = AgentView(doc, agent.x, agent.y)
-            #print(agentView.ToPrettyString())
-            doc.ApplyActionToAgent(agent, None)
+            doc.ApplyActionToAgent(agent, action)
