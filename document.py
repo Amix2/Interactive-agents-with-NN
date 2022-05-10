@@ -13,16 +13,16 @@ class Document:
     """
     def __init__(self, sizeX: int, sizeY: int) -> None:
         self.size = np.array([sizeX, sizeY])
-        self.agents = list()
-        self.tables = list()
-        self.chairs = list()
+        self.agents : list[Agent] = list() 
+        self.tables : list[Table] = list()
+        self.chairs : list[Chair] = list()
         self.grid: list[list[Union[None, ISimObj]]] = [[None for x in range(self.size[1])] for y in range(self.size[0])]
 
     # returns true if action was valid and was performed, false otherwise
     def applyActionToAgent(self, agent: Agent, action: Union[Action, None]) -> bool:
         inGridAgent = self.grid[agent.x][agent.y]
         assert(inGridAgent == agent)
-
+        self.validate()
         newPosition = np.array([agent.x, agent.y])
 
         # current position of grabbed object
@@ -40,6 +40,7 @@ class Document:
             # carry out action
             if action.type == Action.release:
                 agent.grab = None
+                return True;
 
             elif action.type == Action.move:
                 # move to a different square
@@ -54,7 +55,7 @@ class Document:
                 targetPosition = newPosition + Action.directionToVector(action.direction)
 
                 # check if there's furniture there
-                grabTarget = self.grid[targetPosition[0]][targetPosition[1]]
+                grabTarget = self.GetCell(targetPosition[0], targetPosition[1])
                 if self.GetCellCode(targetPosition[0], targetPosition[1]) in [CellCodes.Chair, CellCodes.Table_max, CellCodes.Table_min]:
                     # TODO: consider legal table-carrying configurations (can you only carry by holding short ends?)
                     agent.grab = action.direction
@@ -89,8 +90,8 @@ class Document:
             targetCode = self.GetCellCode(targetPosition[0], targetPosition[1])
             targetNewPosition = targetPosition + Action.directionToVector(action.direction)
             if targetCode == CellCodes.Chair:
-                target.x = targetPosition[0]
-                target.y = targetPosition[1]
+                target.x = targetNewPosition[0]
+                target.y = targetNewPosition[1]
                 self.grid[targetPosition[0]][targetPosition[1]] = None
                 self.grid[targetNewPosition[0]][targetNewPosition[1]] = target
 
@@ -104,6 +105,13 @@ class Document:
 
         # agent.SetLastAction(action) # run only if true
         return True
+
+    # returns object in given x,y or None is x,y is outside of the grid
+    def GetCell(self, x: int, y: int) -> Union[ISimObj, None]:
+        if x < 0 or y < 0 or x >= self.size[0] or y >= self.size[1]:
+            return None
+        return self.grid[x][y]
+
 
     # returns cell code for given x,y from CellCodes list
     def GetCellCode(self, x: int, y: int) -> int:
@@ -145,3 +153,24 @@ class Document:
         self.grid[x][y] = chair
         self.chairs.append(chair)
         return True
+
+    # Validates document making sure all of the objects are in different cells and all cells have correct objects in them
+    def validate(self) -> None:
+        for agent in self.agents:
+            cell = self.GetCell(agent.x, agent.y)
+            assert(cell == agent)
+
+        for table in self.tables:
+            cell = self.GetCell(table.x1, table.y1)
+            assert(cell == table)
+            cell = self.GetCell(table.x2, table.y2)
+            assert(cell == table)
+
+        for chair in self.chairs:
+            cell = self.GetCell(chair.x, chair.y)
+            assert(cell == chair)
+
+        for x in range(0, self.size[0]):
+            for y in range(0, self.size[1]):
+                cell = self.GetCell(x, y)
+                assert(cell is None or cell in self.agents or cell in self.tables or cell in self.chairs)

@@ -56,13 +56,14 @@ class Screen:
         self.drawRect(boardRect, (200, 200, 255))
 
         self.drawCellLines(boardRect, doc)
-        for agent in doc.agents:
-            self.drawAgent(agent, boardRect, doc)
-            print("agent x: ", agent.x, " y: ", agent.y)
 
         for table in doc.tables:
             self.drawTable(table.x1, table.y1, table.x2, table.y2, boardRect, doc)
 
+        for agent in doc.agents:
+            self.drawAgent(agent, boardRect, doc)
+            print("agent x: ", agent.x, " y: ", agent.y)
+        
         for chair in doc.chairs:
             self.drawChair(chair.x, chair.y, boardRect, doc)
 
