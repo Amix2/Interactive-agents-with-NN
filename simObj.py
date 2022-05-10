@@ -36,6 +36,9 @@ class Agent(ISimObj):
 
 
 class Table(ISimObj):
+
+    required_agents = 1 # how many agents are required to move table
+
     def __init__(self, x1: int, y1: int, x2: int, y2: int) -> None:
         assert((abs(x1-x2) == 1 and y1 == y2)
                or (abs(y1-y2) == 1 and x1 == x2))

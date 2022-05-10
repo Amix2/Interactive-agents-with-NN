@@ -12,3 +12,7 @@ class CellCodes:
     Chair = 7
     Table_min = 8
     Table_max = 9
+
+    @staticmethod
+    def IsGrabbable(code: int) -> bool:
+        return code in [CellCodes.Chair, CellCodes.Table_min, CellCodes.Table_max]

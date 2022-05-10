@@ -8,7 +8,7 @@ from document import Document
 from simObj import Agent
 from action import Action
 
-FPS = 30  # frames per second setting
+FPS = 60  # frames per second setting
 white = (255, 255, 255)
 black = (  0,   0,   0)
 green = (  0, 255,   0)
