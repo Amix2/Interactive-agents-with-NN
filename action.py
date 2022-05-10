@@ -17,7 +17,7 @@ class Action:
 
     _valid_directions = [north, west, east, south]
 
-    def __init__(self, type: str, direction: Union[str, None]):
+    def __init__(self, type: str, direction: Union[str, None] = None):
         if type not in Action._valid_types:
             raise ValueError("not a valid action type.")
 
@@ -31,13 +31,24 @@ class Action:
         self.direction = direction
 
     @staticmethod
-    def MakeRandom():
+    def directionToVector(direction: str):
+        if direction == Action.north:
+            return [0, 1]
+        if direction == Action.south:
+            return [0, -1]
+        if direction == Action.east:
+            return [1, 0]
+        if direction == Action.west:
+            return [-1, 0]
+
+    @staticmethod
+    def makeRandom():
         while True:
             try:
                 aType = random.choice(Action._valid_types)        
                 aDir = random.choice(Action._valid_directions + [None])
                 action = Action(aType, aDir)
-            except:
-                pass
+            except ValueError:
+                return Action(Action.wait)
             else:
                 return action
