@@ -19,7 +19,7 @@ class Agent(ISimObj):
         super().__init__()
         self.x = x
         self.y = y
-        self.grab = None
+        self.grab: str= None
 
     def GetCode(self, x: int, y: int) -> int:
         assert(x == self.x and y == self.y)
@@ -37,6 +37,7 @@ class Agent(ISimObj):
 
 class Table(ISimObj):
 
+    # TODO change it after proper validation 
     required_agents = 1 # how many agents are required to move table
 
     def __init__(self, x1: int, y1: int, x2: int, y2: int) -> None:
@@ -48,6 +49,7 @@ class Table(ISimObj):
         self.y1 = min(y1, y2)
         self.x2 = max(x1, x2)
         self.y2 = max(y1, y2)
+        self.grabbed_by : list[Agent] = []
 
     def GetCode(self, x: int, y: int) -> int:
         assert((x == self.x1 and y == self.y1) or (x == self.x2 and y == self.y2))
@@ -62,6 +64,8 @@ class Chair(ISimObj):
         super().__init__()
         self.x = x
         self.y = y
+        self.grabbed_by : list[Agent] = []
+
 
     def GetCode(self, x: int, y: int) -> int:
         assert(x == self.x and y == self.y)

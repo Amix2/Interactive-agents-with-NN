@@ -134,6 +134,7 @@ class Document:
 
         # TODO: consider legal table-carrying configurations (can you only carry by holding short ends?)
         agent.grab = direction
+        target.grabbed_by.append(agent)
         return True
 
     # returns true if action was valid and was performed, false otherwise
@@ -146,12 +147,19 @@ class Document:
         self.validate()
 
 
-
         actionRet = False;
         # carry out action
         if action.type == Action.release:
             actionRet = agent.grab is not None  # action is good only if agent grabbed object before
-            agent.grab = None
+            if agent.grab is not None:
+
+                agentPos = np.array([agent.x, agent.y])
+                targetPosition = agentPos + Action.directionToVector(agent.grab)
+                target = self.GetCell(targetPosition[0], targetPosition[1])
+                target.grabbed_by.remove(agent)
+
+                agent.grab = None
+
 
         elif action.type == Action.move:
             # move to a different square
@@ -162,6 +170,9 @@ class Document:
 
         elif action.type == Action.grab:
             actionRet = self.grabActionAgent(agent, action.direction)
+
+        elif action.type == Action.wait:
+            actionRet = True
 
         self.validate()
         return actionRet
@@ -223,17 +234,32 @@ class Document:
                 grabbedDir = Action.directionToVector(agent.grab)
                 grabbedPos = [agent.x + grabbedDir[0], agent.y + grabbedDir[1]]
                 grabbedCode = self.GetCellCode(grabbedPos[0], grabbedPos[1])
+                grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
                 assert(CellCodes.IsGrabbable(grabbedCode))
+                assert(grabbedObj is not None)
+                assert(agent in grabbedObj.grabbed_by)
 
         for table in self.tables:
             cell = self.GetCell(table.x1, table.y1)
             assert(cell == table)
             cell = self.GetCell(table.x2, table.y2)
             assert(cell == table)
+            for grabbedBy in table.grabbed_by:
+                assert(grabbedBy.grab)
+                grabbedDir = Action.directionToVector(grabbedBy.grab)
+                grabbedPos = [grabbedBy.x + grabbedDir[0], grabbedBy.y + grabbedDir[1]]
+                grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
+                assert(grabbedObj == table)
 
         for chair in self.chairs:
             cell = self.GetCell(chair.x, chair.y)
             assert(cell == chair)
+            for grabbedBy in chair.grabbed_by:
+                assert(grabbedBy.grab)
+                grabbedDir = Action.directionToVector(grabbedBy.grab)
+                grabbedPos = [grabbedBy.x + grabbedDir[0], grabbedBy.y + grabbedDir[1]]
+                grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
+                assert(grabbedObj == chair)
 
         for x in range(0, self.size[0]):
             for y in range(0, self.size[1]):
