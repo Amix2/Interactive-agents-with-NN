@@ -8,7 +8,6 @@ from document import Document
 from simObj import Agent
 from action import Action
 
-FPS = 60  # frames per second setting
 white = (255, 255, 255)
 black = (  0,   0,   0)
 green = (  0, 255,   0)
@@ -21,6 +20,8 @@ class Screen:
     Creates pygame screen and draws objects from document
     """
     # good pygame tutorial https://riptutorial.com/pygame
+
+    FPS = 60  # frames per second setting
 
     def __init__(self) -> None:
         pygame.init()
@@ -39,13 +40,8 @@ class Screen:
 
         self.drawDoc(doc)
 
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit()
-
         pygame.display.update()
-        self.fpsClock.tick(FPS)
+        self.fpsClock.tick(Screen.FPS)
 
     def drawDoc(self, doc: Document):
         (screenX, screenY) = self.getScreenSize()
