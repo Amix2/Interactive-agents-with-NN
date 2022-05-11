@@ -6,7 +6,7 @@ import pygame, sys
 
 
 def main():
-    timeStepInterval = -0.2  # [s]
+    timeStepInterval = 0.2  # [s]
 
     doc = Document(5, 5)
     screen = Screen()
