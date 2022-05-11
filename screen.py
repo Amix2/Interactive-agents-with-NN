@@ -58,7 +58,6 @@ class Screen:
 
         for agent in doc.agents:
             self.drawAgent(agent, boardRect, doc)
-            print("agent x: ", agent.x, " y: ", agent.y)
         
         for chair in doc.chairs:
             self.drawChair(chair.x, chair.y, boardRect, doc)

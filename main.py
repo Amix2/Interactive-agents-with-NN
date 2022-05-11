@@ -18,6 +18,7 @@ def main():
     doc.AddChair(1, 4)
     doc.AddTable(3, 3, 3, 4)
     doc.AddTable(0, 0, 1, 0)
+    Screen.FPS = 1/timeStepInterval
                     
 
     nextSimStepTime = time.time()
@@ -42,6 +43,7 @@ def main():
         if nextSimStepTime <= nowTime:
             nextSimStepTime = nowTime + timeStepInterval
             model.step(doc)
+
         screen.update(doc)
 
 
