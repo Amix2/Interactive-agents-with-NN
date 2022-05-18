@@ -8,16 +8,18 @@ import pygame, sys
 def main():
     timeStepInterval = 0.2  # [s]
 
-    doc = Document(5, 5)
+    doc = Document(5,5)
     screen = Screen()
     model = Model()
-    doc.AddAgent(1, 1)
-    #doc.AddAgent(2, 1)
+    doc.AddAgent(1, 2)
+    doc.AddAgent(2, 1)
+    doc.AddAgent(4, 0)
+    doc.AddAgent(4, 2)
     doc.AddChair(2, 2)
     doc.AddChair(4, 1)
     doc.AddChair(1, 4)
     doc.AddTable(3, 3, 3, 4)
-    doc.AddTable(0, 0, 1, 0)
+    doc.AddTable(0, 1, 1, 1)
     Screen.FPS = 1/timeStepInterval
                     
 
@@ -31,7 +33,7 @@ def main():
                 if event.key == pygame.K_f: # fast mode 
                     timeStepInterval *= -1
                     if timeStepInterval <= 0:
-                        Screen.FPS = 100
+                        Screen.FPS = 200
                     else:
                         Screen.FPS = 1/timeStepInterval
                         

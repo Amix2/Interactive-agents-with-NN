@@ -1,7 +1,8 @@
-from random import randrange
+﻿from random import randrange
 from typing import Union
 
 import numpy as np
+from numpy.core.multiarray import empty
 from action import Action
 from simObj import Agent, Chair, Table, ISimObj
 from cellCodes import CellCodes
@@ -18,7 +19,122 @@ class Document:
         self.chairs : list[Chair] = list()
         self.grid: list[list[Union[None, ISimObj]]] = [[None for x in range(self.size[1])] for y in range(self.size[0])]
 
-    def moveActionGrabbedAgent(self, agent: Agent, direction: str) -> bool:
+    def applyActionList(self, actionList: list):
+        def sortFunc(agentAction):
+            agent: Agent = agentAction[0]
+            action: Action = agentAction[1]
+            IDS = {
+                Action.wait: 1,
+                Action.release: 2,
+                Action.move: 3,
+                Action.grab: 4
+                }
+            actType = action.type
+            return IDS[actType]
+        actionList.sort(key=sortFunc)
+
+
+        while len(actionList) > 0:
+            validatedActionList = self.getValidatedActionGroup(actionList)
+            self.validate()
+            lastMoveAgentAction = None
+            for agentAction in reversed(validatedActionList):
+                agent: Agent = agentAction[0]
+                action: Action = agentAction[1]
+                if action.type == Action.move:
+                    lastMoveAgentAction = agentAction
+                    break
+
+            for agentAction in validatedActionList:
+                agent: Agent = agentAction[0]
+                action: Action = agentAction[1]
+                lastMoveAct = lastMoveAgentAction == agentAction
+                applied = self.performActionToAgent(agent, action, True, lastMoveAct)
+                if not applied:
+                    iiiwe=0
+                    actionGroupGood = self.validateActionGroup(validatedActionList)
+
+                    applied = self.performActionToAgent(agent, action, True, lastMoveAct)
+            self.fixGrid()
+            self.validate()
+
+
+    # pops first element of given list and returns minimal list of good actions all of which have to be performed
+    def getValidatedActionGroup(self, actionList: list) -> list:
+        actionGroup = self.getActionGroup(actionList)
+        actionGroupGood = self.validateActionGroup(actionGroup)
+        if actionGroupGood:
+            return actionGroup
+        return []
+
+    # gets action group containing 1st action and all connected actions, removes those from the given list
+    def getActionGroup(self, actionList: list) -> list:
+        agentAction = actionList.pop(0);
+        outList = [agentAction]
+        agent: Agent = agentAction[0]
+        action: Action = agentAction[1]
+        if agent.grab is not None:
+            grabbedObj = agent.grabbedObj
+            for otherGrabber in grabbedObj.grabbed_by:
+                it = 0
+                while it < len(actionList):
+                    agentAction = actionList[it]
+                    if agentAction[0] == otherGrabber:
+                        outList.append(agentAction)
+                        actionList.pop(it)
+                    else:
+                        it = it + 1
+
+
+
+        return outList
+    
+    # returns true if all of the actions are valid and can be performed as single move
+    def validateActionGroup(self, actionGroup: list) -> bool:
+        # ruch na pozycje okukowaną przez agenta w tej liście, który chce sie przesunąc 
+        # all of the actions are valid on their own
+        for agentAction in actionGroup:
+            actionGood = self.validateAction(agentAction[0], agentAction[1])
+            if not actionGood:
+                return False
+
+        # actions can be release or move all in the same direction
+        moveDir = None
+        moveActCount = 0
+        for agentAction in actionGroup:
+            agent: Agent = agentAction[0]
+            action: Action = agentAction[1]
+            if agent.grab is not None:
+                if action.type == Action.move:
+                    if moveDir is None or moveDir == action.direction:
+                        moveDir = action.direction
+                        moveActCount = moveActCount+1
+                    else:
+                        return False
+                elif action.type == Action.release:
+                    pass
+                else:
+                    return False
+            else:
+                if len(actionGroup) != 1:
+                    teer = 0;
+                    for agentAction in actionGroup:
+                        actionGood = self.validateAction(agentAction[0], agentAction[1])
+                        if not actionGood:
+                            fdasdasdassda=0
+                #assert(len(actionGroup) == 1)
+        if agent.grab is not None:
+            if agent.grabbedCode == CellCodes.Table_min or agent.grabbedCode == CellCodes.Table_max:
+                if moveActCount < 2 and moveActCount > 0:
+                    return False
+        return True;
+
+
+    def validateAction(self, agent: Agent, action: Action) -> bool:
+        actionValid = self.performActionToAgent(agent, action, False,False)
+        return actionValid
+
+    def moveActionGrabbedAgent(self, agent: Agent, direction: str, applyToSelf: bool, applyToOthers: bool) -> bool:
         assert(agent.grab is not None)
 
         agentPos = np.array([agent.x, agent.y])
@@ -28,17 +144,22 @@ class Document:
         grabbedPos = agentPos + Action.directionToVector(agent.grab)
         grabbedCode = self.GetCellCode(grabbedPos[0], grabbedPos[1])
         grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
+        if grabbedObj != agent.grabbedObj:
+            grabbedCode = CellCodes.Empty
+            grabbedObj = None
+
+        if targetCode == CellCodes.Inaccessible:
+            return False
 
         # target cell must be empty
         # TODO stronger check, what if many agents want to move to the same cell in the same step
         if targetCode != CellCodes.Empty and self.GetCell(targetPosition[0], targetPosition[1]) != grabbedObj:  
             return False
 
-
-        assert(CellCodes.IsGrabbable(grabbedCode))
-
         objMoveSuccessful = False;
+
         # try to move grabbed object
+        
         if grabbedCode == CellCodes.Chair:
             grabbedNewPos = grabbedPos + Action.directionToVector(direction)
             newPosCode = self.GetCellCode(grabbedNewPos[0], grabbedNewPos[1])
@@ -49,16 +170,14 @@ class Document:
             else:
                 # move object
                 objMoveSuccessful = True
-                grabbedObj.x = grabbedNewPos[0]
-                grabbedObj.y = grabbedNewPos[1]
-                self.grid[grabbedPos[0]][grabbedPos[1]] = None
-                self.grid[grabbedNewPos[0]][grabbedNewPos[1]] = grabbedObj
+                if applyToOthers:
+                    grabbedObj.x = grabbedNewPos[0]
+                    grabbedObj.y = grabbedNewPos[1]
+                    self.grid[grabbedPos[0]][grabbedPos[1]] = None
+                    self.grid[grabbedNewPos[0]][grabbedNewPos[1]] = grabbedObj
 
             # TODO: check if a table can be moved
         elif grabbedCode in [CellCodes.Table_min, CellCodes.Table_max]:
-            if Table.required_agents != 1:
-                assert(False)
-                objMoveSuccessful = False    ## TODO
 
             grabbedTable : Table = grabbedObj
             grabbedPos1 = np.array([grabbedTable.x1, grabbedTable.y1])
@@ -78,28 +197,29 @@ class Document:
             else:
                 # move object
                 objMoveSuccessful = True
-                grabbedTable.x1 = grabbedNewPos1[0]
-                grabbedTable.y1 = grabbedNewPos1[1]
-                grabbedTable.x2 = grabbedNewPos2[0]
-                grabbedTable.y2 = grabbedNewPos2[1]
-                self.grid[grabbedPos1[0]][grabbedPos1[1]] = None
-                self.grid[grabbedPos2[0]][grabbedPos2[1]] = None
-                self.grid[grabbedNewPos1[0]][grabbedNewPos1[1]] = grabbedTable
-                self.grid[grabbedNewPos2[0]][grabbedNewPos2[1]] = grabbedTable
+                if applyToOthers:
+                    grabbedTable.x1 = grabbedNewPos1[0]
+                    grabbedTable.y1 = grabbedNewPos1[1]
+                    grabbedTable.x2 = grabbedNewPos2[0]
+                    grabbedTable.y2 = grabbedNewPos2[1]
+                    self.grid[grabbedPos1[0]][grabbedPos1[1]] = None
+                    self.grid[grabbedPos2[0]][grabbedPos2[1]] = None
+                    self.grid[grabbedNewPos1[0]][grabbedNewPos1[1]] = grabbedTable
+                    self.grid[grabbedNewPos2[0]][grabbedNewPos2[1]] = grabbedTable
+        else:
+            objMoveSuccessful = True
 
-        if objMoveSuccessful:
+        if objMoveSuccessful and applyToSelf:
             if self.GetCell(agent.x, agent.y) != grabbedObj:    # issue when going opposite direction to grab direction
                 self.grid[agent.x][agent.y] = None
             agent.x = targetPosition[0]
             agent.y = targetPosition[1]
             self.grid[agent.x][agent.y] = agent
 
-            self.validate()
-            return True
-        else:
-            return False
+        return objMoveSuccessful
 
-    def moveActionSoloAgent(self, agent: Agent, direction: str) -> bool:
+
+    def moveActionSoloAgent(self, agent: Agent, direction: str, applyToSelf: bool, applyToOthers: bool) -> bool:
         assert(agent.grab is None)
 
         agentPos = np.array([agent.x, agent.y])
@@ -111,15 +231,16 @@ class Document:
         # target cell must be empty
         if targetCode != CellCodes.Empty:   # TODO stronger check, what if many agents want to move to the same cell in the same step
             return False
-
-        self.grid[agent.x][agent.y] = None
-        agent.x = targetPosition[0]
-        agent.y = targetPosition[1]
-        self.grid[agent.x][agent.y] = agent
+        if applyToSelf:
+            self.grid[agent.x][agent.y] = None
+            agent.x = targetPosition[0]
+            agent.y = targetPosition[1]
+            self.grid[agent.x][agent.y] = agent
 
         return True
 
-    def grabActionAgent(self, agent: Agent, direction: str) -> bool:
+
+    def grabActionAgent(self, agent: Agent, direction: str, applyToSelf: bool, applyToOthers: bool) -> bool:
         if(agent.grab is not None):
             return False
         agentPos = np.array([agent.x, agent.y])
@@ -133,19 +254,22 @@ class Document:
             return False
 
         # TODO: consider legal table-carrying configurations (can you only carry by holding short ends?)
-        agent.grab = direction
-        target.grabbed_by.append(agent)
+        if applyToSelf:
+            agent.grab = direction
+            agent.grabbedCode = targetCode
+            agent.grabbedObj = target
+
+            target.grabbed_by.append(agent) # treated as a self move cos it doesnt affect other obj position 
         return True
 
-    # returns true if action was valid and was performed, false otherwise
-    def applyActionToAgent(self, agent: Agent, action: Action) -> bool:
+
+    # returns true if action was valid and env state is changed if apply==True
+    def performActionToAgent(self, agent: Agent, action: Action, applyToSelf: bool, applyToOthers: bool) -> bool:
         # initial safaty checks
         if action is None:
             return False
         inGridAgent = self.grid[agent.x][agent.y]
         assert(inGridAgent == agent)
-        self.validate()
-
 
         actionRet = False;
         # carry out action
@@ -153,28 +277,29 @@ class Document:
             actionRet = agent.grab is not None  # action is good only if agent grabbed object before
             if agent.grab is not None:
 
-                agentPos = np.array([agent.x, agent.y])
-                targetPosition = agentPos + Action.directionToVector(agent.grab)
-                target = self.GetCell(targetPosition[0], targetPosition[1])
-                target.grabbed_by.remove(agent)
+                target = agent.grabbedObj
 
-                agent.grab = None
+                if applyToSelf:
+                    target.grabbed_by.remove(agent)
+
+                    agent.grab = None
+                    agent.grabbedCode = None
+                    agent.grabbedObj = None
 
 
         elif action.type == Action.move:
             # move to a different square
             if agent.grab:
-                actionRet = self.moveActionGrabbedAgent(agent, action.direction)
+                actionRet = self.moveActionGrabbedAgent(agent, action.direction, applyToSelf, applyToOthers)
             else:
-                actionRet = self.moveActionSoloAgent(agent, action.direction)
+                actionRet = self.moveActionSoloAgent(agent, action.direction, applyToSelf, applyToOthers)
 
         elif action.type == Action.grab:
-            actionRet = self.grabActionAgent(agent, action.direction)
+            actionRet = self.grabActionAgent(agent, action.direction, applyToSelf, applyToOthers)
 
         elif action.type == Action.wait:
             actionRet = True
 
-        self.validate()
         return actionRet
 
     # returns object in given x,y or None is x,y is outside of the grid
@@ -225,6 +350,20 @@ class Document:
         self.chairs.append(chair)
         return True
 
+    def fixGrid(self) -> None:
+        self.grid = [[None for x in range(self.size[1])] for y in range(self.size[0])]
+        for agent in self.agents:
+            self.grid[agent.x][agent.y] = agent
+
+        for table in self.tables:
+            self.grid[table.x1][table.y1] = table
+            self.grid[table.x2][table.y2] = table
+
+        for chair in self.chairs:
+            self.grid[chair.x][chair.y] = chair
+
+
+
     # Validates document making sure all of the objects are in different cells and all cells have correct objects in them
     def validate(self) -> None:
         for agent in self.agents:
@@ -238,6 +377,8 @@ class Document:
                 assert(CellCodes.IsGrabbable(grabbedCode))
                 assert(grabbedObj is not None)
                 assert(agent in grabbedObj.grabbed_by)
+                assert(agent.grabbedCode == grabbedCode)
+                assert(agent.grabbedObj == grabbedObj)
 
         for table in self.tables:
             cell = self.GetCell(table.x1, table.y1)
@@ -250,6 +391,7 @@ class Document:
                 grabbedPos = [grabbedBy.x + grabbedDir[0], grabbedBy.y + grabbedDir[1]]
                 grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
                 assert(grabbedObj == table)
+                assert(grabbedBy.grabbedObj == table)
 
         for chair in self.chairs:
             cell = self.GetCell(chair.x, chair.y)
@@ -260,6 +402,8 @@ class Document:
                 grabbedPos = [grabbedBy.x + grabbedDir[0], grabbedBy.y + grabbedDir[1]]
                 grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
                 assert(grabbedObj == chair)
+                assert(grabbedBy.grabbedObj == chair)
+
 
         for x in range(0, self.size[0]):
             for y in range(0, self.size[1]):
