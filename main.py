@@ -11,13 +11,13 @@ def main():
     doc = Document(5, 5)
     screen = Screen()
     model = Model()
-    doc.AddAgent(1, 1)
+    doc.addAgent(1, 1)
     #doc.AddAgent(2, 1)
-    doc.AddChair(2, 2)
-    doc.AddChair(4, 1)
-    doc.AddChair(1, 4)
-    doc.AddTable(3, 3, 3, 4)
-    doc.AddTable(0, 0, 1, 0)
+    doc.addChair(3, 2)
+    doc.addChair(4, 1)
+    doc.addChair(1, 4)
+    doc.addTable(3, 3, 3, 4)
+    doc.addTable(0, 0, 1, 0)
     Screen.FPS = 1/timeStepInterval
                     
 
