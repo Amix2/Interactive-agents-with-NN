@@ -28,9 +28,9 @@ class Model:
 
         actionList = []
         for agent in doc.agents:
-            action = Action.makeRandom()
-            actionList.append((agent, action))
             agentView = AgentView(doc, agent.x, agent.y)
+            action = agent.selectAction(agentView)
+            actionList.append((agent, action))
             #print(agentView.ToPrettyString())
             #applied = doc.applyActionToAgent(agent, action)
             #print("action type: ", action.type, " success: ", applied)
@@ -38,7 +38,7 @@ class Model:
 
         scoreAfter = Model.getScore(doc)
         reward = scoreAfter - scoreBefore
-        print("reward: ", reward)
+        print("reward: ", reward, " score: ", scoreAfter)
 
         for agent in doc.agents:
             agent.L(reward)

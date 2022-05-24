@@ -21,7 +21,6 @@ class Document:
         self.chairs: list[Chair] = list()
         self.grid: list[list[Union[None, ISimObj]]] = [[None for x in range(self.size[1])] for y in range(self.size[0])]
 
-
     def applyActionList(self, actionList: list):
         def sortFunc(agentAction):
             agent: Agent = agentAction[0]
@@ -37,21 +36,24 @@ class Document:
 
         actionList.sort(key=sortFunc)
 
-
-        self.validate()
-        actionListCopy = actionList.copy()  # for debug
+        actionListCopy = actionList.copy()
         while len(actionList) > 0:
             self.validate()
-
 
             # its valid action group which can be applied to object
             # application can return false if action was useless, but they are all valid
             validActionGroup: ActionGroup = self.getValidatedActionGroup(actionList)
-            self.performActionGroup(validActionGroup)
+            actionSuccessful = self.performActionGroup(validActionGroup)
+            usedAgents = list(set(actionListCopy) - set(actionList))
+
+            for agentAction in usedAgents:
+                agent: Agent = agentAction[0]
+                action: Action = agentAction[1]
+                agent.addToMemory(action, actionSuccessful)
+
+                actionListCopy.remove(agentAction)
             self.fixGrid()
             self.validate()
-
-        self.validate()
 
     # pops first element of given list and returns minimal list of good actions all of which have to be performed
     def getValidatedActionGroup(self, actionList: list) -> ActionGroup:
@@ -124,10 +126,10 @@ class Document:
                     newY = y + moveVec[1]
 
                     # going outside the map
-                    if self.GetCellCode(newX, newY) == CellCodes.Inaccessible:
+                    if self.getCellCode(newX, newY) == CellCodes.Inaccessible:
                         return False
 
-                    collisionObj = self.GetCell(newX, newY)
+                    collisionObj = self.getCell(newX, newY)
                     # collision with object which is not part of this action group
                     if collisionObj is not None and collisionObj not in actionGroup.objects:
                         return False
@@ -143,11 +145,11 @@ class Document:
                     return False
         return True
 
-    def performActionGroup(self, actionGroup: ActionGroup):
+    def performActionGroup(self, actionGroup: ActionGroup) -> bool:
         """Perform action without changing grid"""
         action = actionGroup.action
+        actionSuccessful = False
         for obj in actionGroup.objects:
-            actionSuccessful = False
             if isinstance(obj, Agent):
                 actionSuccessful = self.performActionOnAgent(action, obj)
             elif isinstance(obj, Table):
@@ -156,7 +158,8 @@ class Document:
                 actionSuccessful = self.performActionOnChair(action, obj)
             else:
                 raise NotImplementedError
-            
+        return actionSuccessful
+
     def performActionOnAgent(self, action: Action, agent: Agent) -> bool:
         def waitAction(action: Action, agent: Agent) -> bool:
             return True
@@ -182,8 +185,8 @@ class Document:
             targetPosition = agentPos + Action.directionToVector(action.direction)
 
             # check if there's furniture there
-            target = self.GetCell(targetPosition[0], targetPosition[1])
-            targetCode = self.GetCellCode(targetPosition[0], targetPosition[1])
+            target = self.getCell(targetPosition[0], targetPosition[1])
+            targetCode = self.getCellCode(targetPosition[0], targetPosition[1])
             if not CellCodes.IsGrabbable(targetCode):
                 return False
 
@@ -297,13 +300,13 @@ class Document:
     # Validates document making sure all of the objects are in different cells and all cells have correct objects in them
     def validate(self) -> None:
         for agent in self.agents:
-            cell = self.GetCell(agent.x, agent.y)
+            cell = self.getCell(agent.x, agent.y)
             assert (cell == agent)
             if agent.grab is not None:
                 grabbedDir = Action.directionToVector(agent.grab)
                 grabbedPos = [agent.x + grabbedDir[0], agent.y + grabbedDir[1]]
-                grabbedCode = self.GetCellCode(grabbedPos[0], grabbedPos[1])
-                grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
+                grabbedCode = self.getCellCode(grabbedPos[0], grabbedPos[1])
+                grabbedObj = self.getCell(grabbedPos[0], grabbedPos[1])
                 assert (CellCodes.IsGrabbable(grabbedCode))
                 assert (grabbedObj is not None)
                 assert (agent in grabbedObj.grabbed_by)
@@ -311,21 +314,21 @@ class Document:
                 assert (agent.grabbedObj == grabbedObj)
 
         for table in self.tables:
-            cell = self.GetCell(table.x1, table.y1)
+            cell = self.getCell(table.x1, table.y1)
             assert (cell == table)
-            cell = self.GetCell(table.x2, table.y2)
+            cell = self.getCell(table.x2, table.y2)
             assert (cell == table)
 
             for grabbedBy in table.grabbed_by:
                 assert (grabbedBy.grab)
                 grabbedDir = Action.directionToVector(grabbedBy.grab)
                 grabbedPos = [grabbedBy.x + grabbedDir[0], grabbedBy.y + grabbedDir[1]]
-                grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
+                grabbedObj = self.getCell(grabbedPos[0], grabbedPos[1])
                 assert (grabbedObj == table)
                 assert (grabbedBy.grabbedObj == table)
 
         for chair in self.chairs:
-            cell = self.GetCell(chair.x, chair.y)
+            cell = self.getCell(chair.x, chair.y)
             assert (cell == chair)
 
             for grabbedBy in chair.grabbed_by:
@@ -333,13 +336,13 @@ class Document:
                 grabbedDir = Action.directionToVector(grabbedBy.grab)
                 grabbedPos = [grabbedBy.x + grabbedDir[0], grabbedBy.y + grabbedDir[1]]
 
-                grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
+                grabbedObj = self.getCell(grabbedPos[0], grabbedPos[1])
                 assert (grabbedObj == chair)
                 assert (grabbedBy.grabbedObj == chair)
 
         for x in range(0, self.size[0]):
             for y in range(0, self.size[1]):
-                cell = self.GetCell(x, y)
+                cell = self.getCell(x, y)
                 assert (cell is None or cell in self.agents or cell in self.tables or cell in self.chairs)
 
 

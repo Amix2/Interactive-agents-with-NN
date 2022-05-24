@@ -17,10 +17,6 @@ class ISimObj:
         """Returns true if object is capable of performing given action in their correct state ignoring surroundings """
         raise NotImplementedError
 
-    def applyAction(self, action: Action) -> bool:
-        """Returns true if action was useful"""
-        raise NotImplementedError
-
 
 class Agent(ISimObj):
     def __init__(self, x: int, y: int, actionMemorySize: int = 5) -> None:
@@ -64,19 +60,6 @@ class Agent(ISimObj):
             return True
         raise NotImplementedError
 
-    def applyAction(self, action: Action) -> bool:
-        """Returns true if action was useful"""
-        if action.type == Action.wait:
-            return True
-        elif action.type == Action.release:
-            good = self.grab is not None
-
-        elif action.type == Action.grab:
-            return self.grab is None
-        elif action.type == Action.move:
-            return True
-        raise NotImplementedError
-
     def selectAction(self, agentView: AgentView):
         action = Action.makeRandom()
         return action
@@ -92,13 +75,13 @@ class Agent(ISimObj):
         # TODO: implement the learning function for action selecting
         action: Action
         succeeded: bool
+        if self.getLastAction() is None:
+            return
         action, succeeded = self.getLastAction()
         pass
 
 
-
 class Table(ISimObj):
-
     def __init__(self, x1: int, y1: int, x2: int, y2: int) -> None:
         assert ((abs(x1 - x2) == 1 and y1 == y2)
                 or (abs(y1 - y2) == 1 and x1 == x2))
@@ -109,7 +92,6 @@ class Table(ISimObj):
         self.x2 = max(x1, x2)
         self.y2 = max(y1, y2)
         self.grabbed_by: list[Agent] = []
-
 
     def getCode(self, x: int, y: int) -> int:
         assert((x == self.x1 and y == self.y1) or (x == self.x2 and y == self.y2))
@@ -130,12 +112,11 @@ class Table(ISimObj):
         elif action.type == Action.grab:
             return False
         elif action.type == Action.move:
-            return len(self.grabbed_by) > 0
+            return len(self.grabbed_by) > 1
         raise NotImplementedError
 
 
 class Chair(ISimObj):
-
     def __init__(self, x: int, y: int) -> None:
         super().__init__()
         self.x = x
