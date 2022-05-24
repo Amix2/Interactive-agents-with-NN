@@ -21,6 +21,7 @@ class Document:
         self.chairs: list[Chair] = list()
         self.grid: list[list[Union[None, ISimObj]]] = [[None for x in range(self.size[1])] for y in range(self.size[0])]
 
+
     def applyActionList(self, actionList: list):
         def sortFunc(agentAction):
             agent: Agent = agentAction[0]
@@ -36,10 +37,12 @@ class Document:
 
         actionList.sort(key=sortFunc)
 
+
         self.validate()
         actionListCopy = actionList.copy()  # for debug
         while len(actionList) > 0:
             self.validate()
+
 
             # its valid action group which can be applied to object
             # application can return false if action was useless, but they are all valid
@@ -164,6 +167,7 @@ class Document:
                 target = agent.grabbedObj
                 assert (target is not None)
                 assert (agent in target.grabbed_by)
+
                 target.grabbed_by.remove(agent)
                 agent.grab = None
                 agent.grabbedCode = None
@@ -232,21 +236,21 @@ class Document:
         return False
 
     # returns object in given x,y or None is x,y is outside of the grid
-    def GetCell(self, x: int, y: int) -> Union[ISimObj, None]:
+    def getCell(self, x: int, y: int) -> Union[ISimObj, None]:
         if x < 0 or y < 0 or x >= self.size[0] or y >= self.size[1]:
             return None
         return self.grid[x][y]
 
     # returns cell code for given x,y from CellCodes list
-    def GetCellCode(self, x: int, y: int) -> int:
+    def getCellCode(self, x: int, y: int) -> int:
         if x < 0 or y < 0 or x >= self.size[0] or y >= self.size[1]:
             return CellCodes.Inaccessible
         cellObj = self.grid[x][y]
         if cellObj is None:
             return CellCodes.Empty
-        return cellObj.GetCode(x, y)
+        return cellObj.getCode(x, y)
 
-    def AddAgent(self, x: int, y: int) -> bool:
+    def addAgent(self, x: int, y: int) -> bool:
         if self.grid[x][y] is not None:
             return False
 
@@ -255,7 +259,7 @@ class Document:
         self.agents.append(agent)
         return True
 
-    def AddTable(self, x1: int, y1: int, x2: int, y2: int) -> bool:
+    def addTable(self, x1: int, y1: int, x2: int, y2: int) -> bool:
         if self.grid[x1][y1] is not None:
             return False
         if self.grid[x2][y2] is not None:
@@ -269,7 +273,7 @@ class Document:
         self.tables.append(table)
         return True
 
-    def AddChair(self, x: int, y: int) -> bool:
+    def addChair(self, x: int, y: int) -> bool:
         if self.grid[x][y] is not None:
             return False
 
@@ -311,6 +315,7 @@ class Document:
             assert (cell == table)
             cell = self.GetCell(table.x2, table.y2)
             assert (cell == table)
+
             for grabbedBy in table.grabbed_by:
                 assert (grabbedBy.grab)
                 grabbedDir = Action.directionToVector(grabbedBy.grab)
@@ -322,10 +327,12 @@ class Document:
         for chair in self.chairs:
             cell = self.GetCell(chair.x, chair.y)
             assert (cell == chair)
+
             for grabbedBy in chair.grabbed_by:
                 assert (grabbedBy.grab)
                 grabbedDir = Action.directionToVector(grabbedBy.grab)
                 grabbedPos = [grabbedBy.x + grabbedDir[0], grabbedBy.y + grabbedDir[1]]
+
                 grabbedObj = self.GetCell(grabbedPos[0], grabbedPos[1])
                 assert (grabbedObj == chair)
                 assert (grabbedBy.grabbedObj == chair)
@@ -334,5 +341,6 @@ class Document:
             for y in range(0, self.size[1]):
                 cell = self.GetCell(x, y)
                 assert (cell is None or cell in self.agents or cell in self.tables or cell in self.chairs)
+
 
 
