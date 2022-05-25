@@ -2,6 +2,7 @@ from action import Action
 from cellCodes import CellCodes
 from document import Document
 from agentView import AgentView
+from simObj import Agent
 
 
 class Model:
@@ -26,14 +27,17 @@ class Model:
     def step(doc: Document) -> None:
         scoreBefore = Model.getScore(doc)
 
-        actionList = []
+
+        # TODO make it a class not a tuple 
+        actionList: list[tuple[Agent, Action, AgentView]] = []
         for agent in doc.agents:
             agentView = AgentView(doc, agent.x, agent.y)
-            action = agent.selectAction(agentView)
-            actionList.append((agent, action))
-            #print(agentView.ToPrettyString())
-            #applied = doc.applyActionToAgent(agent, action)
-            #print("action type: ", action.type, " success: ", applied)
+            actions: list[Action] = agent.selectActions(agentView)
+            sharedAct = Model.J(actions, agentView, doc)
+            actionList.append((agent, sharedAct, agentView))
+
+        
+
         doc.applyActionList(actionList)
 
         scoreAfter = Model.getScore(doc)
@@ -41,4 +45,24 @@ class Model:
         print("reward: ", reward, " score: ", scoreAfter)
 
         for agent in doc.agents:
-            agent.L(reward)
+            agent.L(actionList, reward)
+
+        for agent in doc.agents:
+            agent.Q(actionList, reward)
+
+
+    @staticmethod
+    def J(actions: list[Action], agentView: AgentView, doc: Document) -> Action:
+        if len(actions) == 0:
+            return None
+
+        bids: list[list[float]] = []
+        for actId, action in enumerate(actions):
+            bids.append([])
+            for agent in doc.agents:
+                agentBid = agent.bid(action, agentView)
+                bids[actId].append(agentBid)
+
+        # TODO choose action based on bids 
+
+        return actions[0]

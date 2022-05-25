@@ -3,6 +3,7 @@ from typing import Union
 from action import Action
 from agentView import AgentView
 from cellCodes import CellCodes
+import random
 
 
 class ISimObj:
@@ -60,9 +61,9 @@ class Agent(ISimObj):
             return True
         raise NotImplementedError
 
-    def selectAction(self, agentView: AgentView):
+    def selectActions(self, agentView: AgentView) -> list[Action]:
         action = Action.makeRandom()
-        return action
+        return [action]
 
     def addToMemory(self, action: Action, succeeded: bool) -> None:
         self.actionMemory.pop(0)
@@ -71,8 +72,20 @@ class Agent(ISimObj):
     def getLastAction(self):
         return self.actionMemory[self._actionMemorySize-1]
 
-    def L(self, reward: float) -> None:
+    def bid(self, action: Action, agentView: AgentView) -> float:
+        return random.random()
+
+    def L(self, actionList: list[tuple], reward: float) -> None:
         # TODO: implement the learning function for action selecting
+        action: Action
+        succeeded: bool
+        if self.getLastAction() is None:
+            return
+        action, succeeded = self.getLastAction()
+        pass
+
+    def Q(self, actionList: list[tuple], reward: float) -> None:
+        # TODO: implement 
         action: Action
         succeeded: bool
         if self.getLastAction() is None:

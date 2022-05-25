@@ -100,7 +100,7 @@ class Document:
         modelAction = agentActionList[0][1]
         direction = modelAction.direction
 
-        for [agent, action] in agentActionList:
+        for [agent, action, _] in agentActionList:
             thisDir = action.direction
             if thisDir != direction:
                 return ActionGroup.empty()
