@@ -7,7 +7,7 @@ from agentView import AgentView
 class Model:
     def __init__(self) -> None:
         pass
-
+        
     @staticmethod
     def getScore(doc: Document) -> float:
         score = 0
@@ -26,17 +26,19 @@ class Model:
     def step(doc: Document) -> None:
         scoreBefore = Model.getScore(doc)
 
+        actionList = []
         for agent in doc.agents:
             agentView = AgentView(doc, agent.x, agent.y)
             action = agent.selectAction(agentView)
-            applied = doc.applyActionToAgent(agent, action)
-            print("action type: ", action.type, " success: ", applied)
-            agent.addToMemory(action, applied)
+            actionList.append((agent, action))
+            #print(agentView.ToPrettyString())
+            #applied = doc.applyActionToAgent(agent, action)
+            #print("action type: ", action.type, " success: ", applied)
+        doc.applyActionList(actionList)
 
         scoreAfter = Model.getScore(doc)
         reward = scoreAfter - scoreBefore
-        print("reward: ", reward)
+        print("reward: ", reward, " score: ", scoreAfter)
 
         for agent in doc.agents:
             agent.L(reward)
-

@@ -56,11 +56,11 @@ class Screen:
         for table in doc.tables:
             self.drawTable(table.x1, table.y1, table.x2, table.y2, boardRect, doc)
 
-        for agent in doc.agents:
-            self.drawAgent(agent, boardRect, doc)
-        
         for chair in doc.chairs:
             self.drawChair(chair.x, chair.y, boardRect, doc)
+
+        for agent in doc.agents:
+            self.drawAgent(agent, boardRect, doc)
 
     def drawCellLines(self, boardRect: Rect, doc: Document):
         (cellsX, cellsY) = doc.size
@@ -146,7 +146,7 @@ class Screen:
 
     def drawAgentGrab(self, start, end) -> None:
         agentColor = (255, 150, 0)
-        pygame.draw.line(self.screen, agentColor, start, end, 3);
+        pygame.draw.line(self.screen, agentColor, start, end, 15);
 
     def drawTableInRect(self, rect : Rect) -> None:
         deflate = -0.1
