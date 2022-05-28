@@ -4,7 +4,10 @@ from typing import Union
 import numpy as np
 from numpy.core.multiarray import empty
 from action import Action
-from simObj import Agent, Chair, Table, ISimObj
+from simObj import ISimObj
+from agent import Agent
+from chair import Chair
+from table import Table
 from cellCodes import CellCodes
 from actionGroup import ActionGroup
 

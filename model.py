@@ -2,8 +2,8 @@ from action import Action
 from cellCodes import CellCodes
 from document import Document
 from agentView import AgentView
-from simObj import Agent
-
+from agent import Agent
+from config import Config
 
 class Model:
     def __init__(self) -> None:
@@ -27,16 +27,13 @@ class Model:
     def step(doc: Document) -> None:
         scoreBefore = Model.getScore(doc)
 
-
-        # TODO make it a class not a tuple 
+        # TODO make it a class not a tuple
         actionList: list[tuple[Agent, Action, AgentView]] = []
         for agent in doc.agents:
             agentView = AgentView(doc, agent.x, agent.y)
             actions: list[Action] = agent.selectActions(agentView)
-            sharedAct = Model.J(actions, agentView, doc)
+            sharedAct = Model.J(actions, agent, agentView, doc)
             actionList.append((agent, sharedAct, agentView))
-
-        
 
         doc.applyActionList(actionList)
 
@@ -52,17 +49,23 @@ class Model:
 
 
     @staticmethod
-    def J(actions: list[Action], agentView: AgentView, doc: Document) -> Action:
+    def J(actions: list[Action], thisAgent: Agent, agentView: AgentView, doc: Document) -> Action:
         if len(actions) == 0:
             return None
-
         bids: list[list[float]] = []
         for actId, action in enumerate(actions):
             bids.append([])
             for agent in doc.agents:
-                agentBid = agent.bid(action, agentView)
-                bids[actId].append(agentBid)
+                if thisAgent.distanceTo(agent) <= Config.agent_coms_distance:
+                    agentBid = agent.bid(action, agentView)
+                    bids[actId].append(agentBid)
+            bids[actId].sort(reverse=True)
 
-        # TODO choose action based on bids 
+        bestActID = 0
+        bestActBid = bids[0][0]
+        for id, bid in enumerate(bids):
+            if bid[0] > bestActBid:
+                bestActID = id
+                bestActBid = bid[0]
 
-        return actions[0]
+        return actions[bestActID]

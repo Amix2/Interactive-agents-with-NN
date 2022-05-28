@@ -5,7 +5,7 @@ from pygame.locals import *
 from pygame import Rect
 
 from document import Document
-from simObj import Agent
+from agent import Agent
 from action import Action
 
 white = (255, 255, 255)

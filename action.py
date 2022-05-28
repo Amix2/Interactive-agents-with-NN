@@ -52,3 +52,18 @@ class Action:
                 return Action(Action.wait)
             else:
                 return action
+
+    @staticmethod
+    def getAll() -> list:
+        return [
+            Action(Action.grab, Action.north),
+            Action(Action.grab, Action.east),
+            Action(Action.grab, Action.south),
+            Action(Action.grab, Action.west),
+            Action(Action.move, Action.north),
+            Action(Action.move, Action.east),
+            Action(Action.move, Action.south),
+            Action(Action.move, Action.west),
+            Action(Action.wait),
+            Action(Action.release),
+            ]
