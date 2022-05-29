@@ -4,6 +4,9 @@ from document import Document
 from agentView import AgentView
 from agent import Agent
 from config import Config
+from performedAction import PerformedAction
+import time
+
 
 class Model:
     def __init__(self) -> None:
@@ -26,27 +29,36 @@ class Model:
     @staticmethod
     def step(doc: Document) -> None:
         scoreBefore = Model.getScore(doc)
-
-        # TODO make it a class not a tuple
-        actionList: list[tuple[Agent, Action, AgentView]] = []
+        timeStart = time.time()
+        perfActionList: list[PerformedAction] = []
         for agent in doc.agents:
             agentView = AgentView(doc, agent.x, agent.y)
             actions: list[Action] = agent.selectActions(agentView)
+            assert(len(actions) > 0)
             sharedAct = Model.J(actions, agent, agentView, doc)
-            actionList.append((agent, sharedAct, agentView))
+            assert(sharedAct is not None)
+            perfActionList.append(PerformedAction(agent, sharedAct, agentView))
 
-        doc.applyActionList(actionList)
+        doc.applyActionList(perfActionList)
 
         scoreAfter = Model.getScore(doc)
         reward = scoreAfter - scoreBefore
         print("reward: ", reward, " score: ", scoreAfter)
 
-        for agent in doc.agents:
-            agent.L(actionList, reward)
+        for perfAct in perfActionList:
+            perfAct.reward = reward
+
+        for perfAct in perfActionList:
+            perfAct.agent.addToMemory(perfAct.action, perfAct.agentView, perfAct.success, perfAct.reward)
 
         for agent in doc.agents:
-            agent.Q(actionList, reward)
+            agent.L(perfActionList, reward)
 
+        for agent in doc.agents:
+            agent.Q(perfActionList, reward)
+
+        timeEnd = time.time()
+        print("Step time: ", timeEnd - timeStart)
 
     @staticmethod
     def J(actions: list[Action], thisAgent: Agent, agentView: AgentView, doc: Document) -> Action:

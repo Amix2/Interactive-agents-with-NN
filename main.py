@@ -1,8 +1,11 @@
+import time
+
+import pygame
+import sys
+
 from document import Document
 from model import Model
 from screen import Screen
-import time
-import pygame, sys
 
 
 def main():
@@ -14,8 +17,8 @@ def main():
 
     doc.addAgent(1, 2)
     doc.addAgent(2, 1)
-    doc.addAgent(4, 0)
-    doc.addAgent(4, 2)
+    #doc.addAgent(4, 0)
+    #doc.addAgent(4, 2)
     doc.addChair(2, 2)
     doc.addChair(4, 1)
     doc.addChair(1, 4)
