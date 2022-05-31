@@ -24,6 +24,7 @@ class Document:
         self.tables: list[Table] = list()
         self.chairs: list[Chair] = list()
         self.grid: list[list[Union[None, ISimObj]]] = [[None for x in range(self.size[1])] for y in range(self.size[0])]
+        self.step = 0
 
     def applyActionList(self, perfActionList: list[PerformedAction]):
         def sortFunc(perfAction: PerformedAction):
@@ -39,7 +40,7 @@ class Document:
 
         perfActionList.sort(key=sortFunc)
         perfActListTemp = perfActionList.copy()
-
+        self.step += 1
         while len(perfActListTemp) > 0:
             self.validate()
 

@@ -35,5 +35,16 @@ class AgentView:
         out = []
         for y in range(0, self.size):
             for x in range(0, self.size):
-                out.append(self.GetData(x, y) / 9)
+                out.append(self.GetData(x, y) / 10)
         return out
+
+    def __eq__(self, other):
+        """self == other"""
+        if isinstance(other, AgentView):
+            if self.size != other.size:
+                return False
+            for i, d in enumerate(self.data):
+                if d != other.data[i]:
+                    return False
+                return True
+        return NotImplemented

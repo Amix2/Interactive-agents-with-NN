@@ -67,5 +67,5 @@ class Action:
             ]
 
     def getCode(self) -> int:
-        return self.getAll().index(self) / len(self.getAll())
+        return self.getAll().index(self) / (len(self.getAll()) +1)
 

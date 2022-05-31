@@ -43,7 +43,6 @@ class Model:
 
         scoreAfter = Model.getScore(doc)
         reward = scoreAfter - scoreBefore
-        print("reward: ", reward, " score: ", scoreAfter)
 
         for perfAct in perfActionList:
             perfAct.reward = reward
@@ -54,11 +53,14 @@ class Model:
         for agent in doc.agents:
             agent.L(perfActionList, reward)
 
+        afterAgentViews = []
         for agent in doc.agents:
-            agent.Q(perfActionList, reward)
+            afterAgentViews.append(AgentView(doc, agent.x, agent.y))
+        for agent in doc.agents:
+            agent.Q(perfActionList, afterAgentViews, reward)
 
         timeEnd = time.time()
-        print("Step time: ", timeEnd - timeStart)
+        print("reward: ", reward, " score: ", scoreAfter, " step time: ", f'{(timeEnd - timeStart):.2f}', " step nr ", doc.step)
 
     @staticmethod
     def J(actions: list[Action], thisAgent: Agent, agentView: AgentView, doc: Document) -> Action:

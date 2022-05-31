@@ -93,8 +93,7 @@ class Agent(ISimObj):
         return [a for a in self.actionMemory if a is not None]
 
     def bid(self, action: Action, agentView: AgentView) -> float:
-        # TODO implement
-        return random.random()
+        return self.calculateQ((agentView, action))[0]
 
     def L(self, performedActionList: list[PerformedAction], reward: float) -> None:
         # Options for teaching:
@@ -147,8 +146,74 @@ class Agent(ISimObj):
         else:
             raise NotImplementedError
 
-    def Q(self, actionList: list[PerformedAction], reward: float) -> None:
-        # TODO: implement
+    def Q(self, performedActionList: list[PerformedAction], newVisions: list[AgentView], reward: float) -> None:
+        # Options for teaching:
+        # 1. Based on this step's action for this agent
+        # 2. Based on this step's action for all the agents (in range) (this agent's Q models)
+        # 3. Based on history actions for this agent
+        # 4. Based on history actions for all the agents (in range) (this agent's Q models)
+
+        def FitForPastActions(pastActions: list[tuple[PastAction, AgentView]]):
+            """pastActions tuple contains action and view from after action was performed"""
+            # lets assume performedActionList contains following actions (in order) a2, a2, a3 and views v1, v2, v3
+            # after changes were made we have new agentViews called nv1, nv2, nv3...
+            # trainBatchX ] [v1a1, v2a2, v3a3...]
+            # trainBatchY will be:
+            # [ [Q(v1,a1) + a(r + y*MAX^all possible actions^(Q(nv1, a)) - Q(v1, a1)],          // fixing value for a1v1
+            #   [Q(v2,a2) + a(r + y*MAX^all possible actions^(Q(nv2, a)) - Q(v2, a2)],...]      // fixing value for a2v2
+            evalQ: list[tuple[AgentView, Action]] = []  # list of all requests to predict with Q model
+            allActions = Action.getAll()
+            for pastAct, nextView in pastActions:
+                evalQ.append((pastAct.agentView, pastAct.action))  # for Q(v1,a1)
+                for allAct in allActions:
+                    evalQ.append((nextView, allAct))  # for Q(v1,a1)
+
+            valuesQ = [d[0] for d in self.calculateQ(evalQ)]
+            trainBatchX = []
+            trainBatchY = []
+            for pastAct, nextView in pastActions:
+                X = pastAct.agentView.toList()
+                X.append(pastAct.action.getCode())
+                trainBatchX.append(np.array(X))
+
+                qValId = evalQ.index((pastAct.agentView, pastAct.action))
+                qValBase = valuesQ[qValId]
+                assert not math.isnan(qValBase)
+
+                nextViewActions = [valuesQ[ evalQ.index((nextView, a)) ] for a in allActions]
+                maxAllActions = max(nextViewActions)  # MAX^all possible actions^(Q(nv, a))
+                assert not math.isnan(maxAllActions)
+
+                # Q(v,a) + a(r + y*MAX^all possible actions^(Q(nv, a)) - Q(v, a)
+                fixedQVal = qValBase + Config.q_learn_a * (pastAct.reward + Config.q_learn_y * maxAllActions - qValBase)
+                assert not math.isnan(fixedQVal)
+
+                trainBatchY.append(np.array(fixedQVal))
+            self.QModel.fit(np.array(trainBatchX), np.array(trainBatchY), verbose=0)
+
+        option = 4
+        if option == 2:
+            pastActionsWithViews: list[tuple[PastAction, AgentView]] = []
+            for i, perfAct in enumerate(performedActionList):
+                if self.distanceTo(perfAct.agent) < Config.agent_coms_distance:
+                    pastActionsWithViews.append(
+                        (PastAction(perfAct.action, perfAct.agentView, perfAct.success, reward), newVisions[i]))
+            FitForPastActions(pastActionsWithViews)
+        elif option == 4:
+            pastActionsWithViews: list[tuple[PastAction, AgentView]] = []
+            for i, perfAct in enumerate(performedActionList):
+                if self.distanceTo(perfAct.agent) < Config.agent_coms_distance:
+                    pastActionsWithViews.append(
+                        (PastAction(perfAct.action, perfAct.agentView, perfAct.success, reward), newVisions[i]))
+                    agentMemory = perfAct.agent.getActionMemory()
+                    for i2, agentsPastAct in enumerate(agentMemory[0:-1]):
+                        nextView = agentMemory[i2+1].agentView
+                        pastActionsWithViews.append(
+                            (PastAction(agentsPastAct.action, agentsPastAct.agentView, agentsPastAct.success, reward), nextView))
+            FitForPastActions(pastActionsWithViews)
+        else:
+            raise NotImplementedError
+
         action: Action
         succeeded: bool
         if self.getLastAction() is None:
@@ -163,11 +228,11 @@ class Agent(ISimObj):
     def createDeltaNN() -> keras.Model:
         model = Sequential()
         # agent view -> value for each action [-1,1]
-        model.add(Dense(10, activation='relu'
+        model.add(Dense(100, activation='relu'
                         , input_dim=Config.agent_view_zone_size*Config.agent_view_zone_size))
-        model.add(Dense(10, activation='relu'))
-        model.add(Dense(5, activation='relu'))
-        model.add(Dense(len(Action.getAll())))
+        #model.add(Dense(100, activation='relu'))
+        model.add(Dense(50, activation='relu'))
+        model.add(Dense(len(Action.getAll()), activation='softsign'))
 
         model.compile(optimizer='adam',
                       loss='categorical_crossentropy',
@@ -179,17 +244,20 @@ class Agent(ISimObj):
             agentViews = [agentViews]
         inputs = [av.toList() for av in agentViews]
         deltaPredictions = self.deltaModel.predict(inputs)
+        for d in deltaPredictions:
+            for p in d:
+                assert not math.isnan(p)
         return deltaPredictions
 
     @staticmethod
     def createQNN() -> keras.Model:
         model = Sequential()
         # agent view + action -> action value [float] [-1,1]
-        model.add(Dense(10, activation='relu'
+        model.add(Dense(100, activation='relu'
                         , input_dim=Config.agent_view_zone_size*Config.agent_view_zone_size+1))
-        model.add(Dense(10, activation='relu'))
-        model.add(Dense(5, activation='relu'))
-        model.add(Dense(1))
+        #model.add(Dense(100, activation='relu'))
+        model.add(Dense(50, activation='relu'))
+        model.add(Dense(1, activation='softsign'))
 
         model.compile(optimizer='adam',
                       loss='categorical_crossentropy',
@@ -204,5 +272,8 @@ class Agent(ISimObj):
             input = av.toList()
             input.append(act.getCode())
             inputs.append(input)
-        deltaPredictions = self.QModel.predict(inputs)
-        return deltaPredictions
+        predictions = self.QModel.predict(inputs)
+        #print(predictions)
+        for d in predictions:
+            assert not math.isnan(d[0])
+        return predictions
