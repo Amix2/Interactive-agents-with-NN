@@ -1,4 +1,5 @@
-﻿from random import randrange
+﻿import random
+from random import randrange
 from typing import Union
 
 import numpy as np
@@ -345,5 +346,44 @@ class Document:
                 cell = self.getCell(x, y)
                 assert (cell is None or cell in self.agents or cell in self.tables or cell in self.chairs)
 
+    @staticmethod
+    def getRandom(sizeX: int, sizeY: int, n_tables: int, n_chairs: int, n_agents: int) -> 'Document':
+        doc = Document(sizeX, sizeY)
 
+        placed_tables = 0
+        while placed_tables < n_tables:
+            table_dir = random.choice(["V", "H"])
+
+            if table_dir == "V":
+                x1 = random.randint(0, sizeX-1)
+                y1 = random.randint(0, sizeY-2)
+                x2 = x1
+                y2 = y1+1
+
+            else:  # table_dir == "H"
+                x1 = random.randint(0, sizeX - 2)
+                y1 = random.randint(0, sizeY - 1)
+                x2 = x1 + 1
+                y2 = y1
+
+            if doc.addTable(x1, y1, x2, y2):
+                placed_tables += 1
+
+        placed_chairs = 0
+        while placed_chairs < n_chairs:
+            x = random.randint(0, sizeX-1)
+            y = random.randint(0, sizeY-1)
+
+            if doc.addChair(x, y):
+                placed_chairs += 1
+
+        placed_agents = 0
+        while placed_agents < n_agents:
+            x = random.randint(0, sizeX - 1)
+            y = random.randint(0, sizeY - 1)
+
+            if doc.addAgent(x, y):
+                placed_agents += 1
+
+        return doc
 
