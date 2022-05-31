@@ -15,6 +15,7 @@ from keras.layers import Dense
 from performedAction import PerformedAction
 import tensorflow as tf
 
+
 class PastAction:
     def __init__(self, action: Action, agentView: AgentView, success: bool = None, reward: float = None):
         self.action = action
@@ -88,6 +89,9 @@ class Agent(ISimObj):
     def getLastAction(self):
         return self.actionMemory[self._actionMemorySize-1]
 
+    def getActionMemory(self):
+        return [a for a in self.actionMemory if a is not None]
+
     def bid(self, action: Action, agentView: AgentView) -> float:
         # TODO implement
         return random.random()
@@ -98,8 +102,8 @@ class Agent(ISimObj):
         # 2. Based on this step's action for all the agents (in range) (this agent's Q models)
         # 3. Based on history actions for this agent
         # 4. Based on history actions for all the agents (in range) (this agent's Q models)
-        option = 2
-        if option == 2:
+
+        def FitForPastActions(pastActions: list[PastAction]):
             # lets assume performedActionList contains following actions (in order) a2, a2, a3 and views v1, v2, v3
             # trainBatchX ] [v1, v2, v3...]
             # trainBatchY will be:
@@ -108,26 +112,38 @@ class Agent(ISimObj):
             #   [d(v3)[a1], d(v3)[a2], d(v3)[a3] + a(r-Q(v3,a3))...]]   // fixing value for a3
             viewsActions: list[tuple[AgentView, Action]] = []
             views: list[AgentView] = []
-            for perfAct in performedActionList:
-                if self.distanceTo(perfAct.agent) < Config.agent_coms_distance:
-                    viewsActions.append((perfAct.agentView, perfAct.action))
-                    views.append(perfAct.agentView)
+            for pastAct in pastActions:
+                viewsActions.append((pastAct.agentView, pastAct.action))
+                views.append(pastAct.agentView)
             Qvalues = self.calculateQ(viewsActions)
             deltaValues = self.calculateDelta(views)
             trainBatchX = []
             trainBatchY = []
-            i = 0
-            for perfAct in performedActionList:
-                if self.distanceTo(perfAct.agent) < Config.agent_coms_distance:
-                    trainBatchX.append(np.array(perfAct.agentView.toList()))
-                    Y = deltaValues[i]
+            for i, pastAct in enumerate(pastActions):
+                trainBatchX.append(np.array(pastAct.agentView.toList()))
+                Y = deltaValues[i]
 
-                    actID = Action.getAll().index(perfAct.action)
-                    Y[actID] = Y[actID] + Config.q_learn_a * (perfAct.reward - Qvalues[i][0])
-                    trainBatchY.append(np.array(Y))
-                    i = i+1
+                actID = Action.getAll().index(pastAct.action)
+                Y[actID] = Y[actID] + Config.q_learn_a * (pastAct.reward - Qvalues[i][0])
+                trainBatchY.append(np.array(Y))
 
             self.deltaModel.fit(np.array(trainBatchX), np.array(trainBatchY), verbose=0)
+
+        option = 4
+        if option == 2:
+            pastActions: list[PastAction] = []
+            for perfAct in performedActionList:
+                if self.distanceTo(perfAct.agent) < Config.agent_coms_distance:
+                    pastActions.append(PastAction(perfAct.action, perfAct.agentView, perfAct.success, reward))
+            FitForPastActions(pastActions)
+        elif option == 4:
+            pastActions: list[PastAction] = []
+            for perfAct in performedActionList:
+                if self.distanceTo(perfAct.agent) < Config.agent_coms_distance:
+                    for agentsPastAct in perfAct.agent.getActionMemory():
+                        pastActions.append(
+                            PastAction(agentsPastAct.action, agentsPastAct.agentView, agentsPastAct.success, reward))
+            FitForPastActions(pastActions)
         else:
             raise NotImplementedError
 
