@@ -63,6 +63,29 @@ class Model:
         print("reward: ", reward, " score: ", scoreAfter, " step time: ", f'{(timeEnd - timeStart):.2f}', " step nr ", doc.step)
 
     @staticmethod
+    def randomStep(doc: Document) -> None:
+        scoreBefore = Model.getScore(doc)
+        timeStart = time.time()
+        perfActionList: list[PerformedAction] = []
+        for agent in doc.agents:
+            agentView = AgentView(doc, agent.x, agent.y)
+            sharedAct = Action.makeRandom()
+            assert (sharedAct is not None)
+            perfActionList.append(PerformedAction(agent, sharedAct, agentView))
+
+        doc.applyActionList(perfActionList)
+
+        scoreAfter = Model.getScore(doc)
+        reward = scoreAfter - scoreBefore
+
+        for perfAct in perfActionList:
+            perfAct.reward = reward
+
+        timeEnd = time.time()
+        print("Random Step reward: ", reward, " score: ", scoreAfter, " step time: ", f'{(timeEnd - timeStart):.2f}', " step nr ",
+              doc.step)
+
+    @staticmethod
     def J(actions: list[Action], thisAgent: Agent, agentView: AgentView, doc: Document) -> Action:
         if len(actions) == 0:
             return None

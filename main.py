@@ -29,7 +29,8 @@ def main():
 
     doc = Document.getRandom(5, 5, 2, 3, 2)
 
-    Screen.FPS = 1/timeStepInterval  
+    Screen.FPS = 1/timeStepInterval
+    randomSteps = False
 
     nextSimStepTime = time.time()
     while True:  # the main game loop
@@ -38,13 +39,15 @@ def main():
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_f: # fast mode 
+                if event.key == pygame.K_f:  # fast mode
                     timeStepInterval *= -1
                     if timeStepInterval <= 0:
                         Screen.FPS = 200
                     else:
                         Screen.FPS = 1/timeStepInterval
-                        
+
+                if event.key == pygame.K_r:  # random mode
+                    randomSteps = not randomSteps
             elif event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -52,11 +55,13 @@ def main():
         nowTime = time.time()
         if nextSimStepTime <= nowTime:
             nextSimStepTime = nowTime + timeStepInterval
-            model.step(doc)
+            if not randomSteps:
+                model.step(doc)
+            else:
+                model.randomStep(doc)
 
         screen.update(doc)
 
 
 if __name__ == "__main__":
-    with tf.device('/cpu:0'):
-        main()
+   main()
