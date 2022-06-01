@@ -12,23 +12,25 @@ import tensorflow as tf
 def main():
     timeStepInterval = 0.2  # [s]
 
-    doc = Document(5,5)
     screen = Screen()
     model = Model()
 
-    doc.addAgent(1, 2)
-    doc.addAgent(2, 1)
+
+    # doc = Document(5,5)
+    # doc.addAgent(1, 2)
+    # doc.addAgent(2, 1)
     # doc.addAgent(4, 0)
     # doc.addAgent(4, 2)
-    doc.addChair(2, 2)
-    doc.addChair(4, 1)
-    doc.addChair(1, 4)
-    doc.addTable(3, 3, 3, 4)
-    doc.addTable(0, 1, 1, 1)
+    # doc.addChair(2, 2)
+    # doc.addChair(4, 1)
+    # doc.addChair(1, 4)
+    # doc.addTable(3, 3, 3, 4)
+    # doc.addTable(0, 1, 1, 1)
+
+    doc = Document.getRandom(5, 5, 2, 3, 2)
 
     Screen.FPS = 1/timeStepInterval
                     
-
     nextSimStepTime = time.time()
     while True:  # the main game loop
 
@@ -56,5 +58,4 @@ def main():
 
 
 if __name__ == "__main__":
-    with tf.device('/cpu:0'):
-        main()
+    main()
