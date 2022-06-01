@@ -13,17 +13,36 @@ class Model:
         pass
         
     @staticmethod
-    def getScore(doc: Document) -> float:
+    def getScore(doc: Document) -> int:
+        def taxiDist(x1, y1, x2, y2):
+            return abs(x1-x2) + abs(y1-y2)
         score = 0
+        docSizeSum = doc.size[0]+doc.size[1]
         for x in range(doc.size[0]):
             for y in range(doc.size[1]):
                 # scan for chairs
                 if doc.getCellCode(x, y) == CellCodes.Chair:
+                    closestTableDist = 100000000
+                    for _x in range(0, doc.size[0]):
+                        for _y in range(0, doc.size[1]):
+                            if doc.getCellCode(_x, _y) in [CellCodes.Table_min, CellCodes.Table_max]:
+                                closestTableDist = min(closestTableDist, taxiDist(x, y, _x, _y))
+                    # closestTableDist = taxi distance to closest table, smaller -> bigger reward but always in [0,1]
+
+                    isNextToTable = False
                     for (_x, _y) in [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]:
                         # check if chair is next to a table
                         if doc.getCellCode(_x, _y) in [CellCodes.Table_min, CellCodes.Table_max]:
-                            score += 1
+                            isNextToTable = True
                             break
+                    if isNextToTable:
+                        score += 1
+                    else:
+                        if len(doc.getCell(x, y).grabbed_by) > 0:
+                            closestTableDist -= 0.5  # bonus for holding chair which is not directly next to table
+                    distScore = (docSizeSum - closestTableDist) / docSizeSum  # normalize to [0,1]
+                    assert 0 <= distScore <= 1
+                    score += distScore
         return score
 
     @staticmethod
@@ -82,7 +101,7 @@ class Model:
             perfAct.reward = reward
 
         timeEnd = time.time()
-        print("Random Step reward: ", reward, " score: ", scoreAfter, " step time: ", f'{(timeEnd - timeStart):.2f}', " step nr ",
+        print("Random Step reward: ", f'{reward:.2f}', " score: ", f'{scoreAfter:.2f}', " step time: ", f'{(timeEnd - timeStart):.2f}', " step nr ",
               doc.step)
 
     @staticmethod

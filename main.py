@@ -15,7 +15,6 @@ def main():
     screen = Screen()
     model = Model()
 
-
     # doc = Document(5,5)
     # doc.addAgent(1, 2)
     # doc.addAgent(2, 1)
@@ -30,7 +29,7 @@ def main():
     doc = Document.getRandom(5, 5, 2, 3, 2)
 
     Screen.FPS = 1/timeStepInterval
-    randomSteps = False
+    randomSteps = True
 
     nextSimStepTime = time.time()
     while True:  # the main game loop
