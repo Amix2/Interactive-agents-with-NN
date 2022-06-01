@@ -79,7 +79,7 @@ class Model:
             agent.Q(perfActionList, afterAgentViews, reward)
 
         timeEnd = time.time()
-        print("reward: ", reward, " score: ", scoreAfter, " step time: ", f'{(timeEnd - timeStart):.2f}', " step nr ", doc.step)
+        print("reward: ", f'{reward:.2f}', " score: ", f'{scoreAfter:.2f}', " step time: ", f'{(timeEnd - timeStart):.2f}', " step nr ", doc.step)
 
     @staticmethod
     def randomStep(doc: Document) -> None:
