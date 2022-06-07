@@ -30,6 +30,12 @@ class Action:
         self.type = type
         self.direction = direction
 
+    def __eq__(self, other):
+        """self == other"""
+        if isinstance(other, Action):
+            return self.type == other.type and self.direction == other.direction
+        return NotImplemented
+
     @staticmethod
     def directionToVector(direction: str):
         if direction == Action.north:
@@ -43,12 +49,23 @@ class Action:
 
     @staticmethod
     def makeRandom():
-        while True:
-            try:
-                aType = random.choice(Action._valid_types)        
-                aDir = random.choice(Action._valid_directions + [None])
-                action = Action(aType, aDir)
-            except ValueError:
-                return Action(Action.wait)
-            else:
-                return action
+        return random.choice(Action.getAll())
+
+    @staticmethod
+    def getAll() -> list:
+        return [
+            Action(Action.grab, Action.north),
+            Action(Action.grab, Action.east),
+            Action(Action.grab, Action.south),
+            Action(Action.grab, Action.west),
+            Action(Action.move, Action.north),
+            Action(Action.move, Action.east),
+            Action(Action.move, Action.south),
+            Action(Action.move, Action.west),
+            Action(Action.wait),
+            Action(Action.release),
+            ]
+
+    def getCode(self) -> int:
+        return self.getAll().index(self) / (len(self.getAll()) +1)
+

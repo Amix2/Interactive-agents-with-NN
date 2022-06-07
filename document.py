@@ -5,9 +5,13 @@ from typing import Union
 import numpy as np
 from numpy.core.multiarray import empty
 from action import Action
-from simObj import Agent, Chair, Table, ISimObj
+from simObj import ISimObj
+from agent import Agent
+from chair import Chair
+from table import Table
 from cellCodes import CellCodes
 from actionGroup import ActionGroup
+from performedAction import PerformedAction
 
 
 class Document:
@@ -21,11 +25,11 @@ class Document:
         self.tables: list[Table] = list()
         self.chairs: list[Chair] = list()
         self.grid: list[list[Union[None, ISimObj]]] = [[None for x in range(self.size[1])] for y in range(self.size[0])]
+        self.step = 0
 
-    def applyActionList(self, actionList: list):
-        def sortFunc(agentAction):
-            agent: Agent = agentAction[0]
-            action: Action = agentAction[1]
+    def applyActionList(self, perfActionList: list[PerformedAction]):
+        def sortFunc(perfAction: PerformedAction):
+            action: Action = perfAction.action
             IDS = {
                 Action.wait: 1,
                 Action.release: 2,
@@ -35,24 +39,30 @@ class Document:
             actType = action.type
             return IDS[actType]
 
-        actionList.sort(key=sortFunc)
-
-        actionListCopy = actionList.copy()
-        while len(actionList) > 0:
+        perfActionList.sort(key=sortFunc)
+        perfActListTemp = perfActionList.copy()
+        self.step += 1
+        while len(perfActListTemp) > 0:
             self.validate()
 
+            perfActListCopy = perfActionList.copy()  # used to know what actions was performed in this loop iteration
             # its valid action group which can be applied to object
             # application can return false if action was useless, but they are all valid
-            validActionGroup: ActionGroup = self.getValidatedActionGroup(actionList)
+            validActionGroup: ActionGroup = self.getValidatedActionGroup(perfActListTemp)
             actionSuccessful = self.performActionGroup(validActionGroup)
-            usedAgents = list(set(actionListCopy) - set(actionList))
+            usedAgents = list(set(perfActListCopy) - set(perfActListTemp))
 
             for agentAction in usedAgents:
-                agent: Agent = agentAction[0]
-                action: Action = agentAction[1]
-                agent.addToMemory(action, actionSuccessful)
+                def find(perfAct: list[PerformedAction], item: PerformedAction) -> int:
+                    for i, action in enumerate(perfAct):
+                        if action.agent.x == item.agent.x and action.agent.y == item.agent.y:
+                            return i
+                    return -1
 
-                actionListCopy.remove(agentAction)
+                perfActionList[find(perfActionList, agentAction)].success = actionSuccessful
+                agent: Agent = agentAction.agent
+                action: Action = agentAction.action
+
             self.fixGrid()
             self.validate()
 
@@ -68,10 +78,10 @@ class Document:
         return ActionGroup.empty()
 
     # gets action group containing 1st action and all connected actions, removes those from the given list
-    def getActionGroup(self, actionList: list) -> ActionGroup:
+    def getActionGroup(self, actionList: list[PerformedAction]) -> ActionGroup:
         agentAction = actionList.pop(0)
-        agent: Agent = agentAction[0]
-        action: Action = agentAction[1]
+        agent: Agent = agentAction.agent
+        action: Action = agentAction.action
         if action.type != Action.move:
             # stationary action
             return ActionGroup(action, [agent])
@@ -83,29 +93,29 @@ class Document:
         # we have to collect all the agents who grabbed the same object
         agentActionList = [agentAction]
         objectList = []
-        agent: Agent = agentAction[0]
-        action: Action = agentAction[1]
+        agent: Agent = agentAction.agent
+        action: Action = agentAction.action
         if agent.grab is not None:
             grabbedObj = agent.grabbedObj
             for otherGrabber in grabbedObj.grabbed_by:
                 it = 0
                 while it < len(actionList):
                     agentAction = actionList[it]
-                    if agentAction[0] == otherGrabber:
+                    if agentAction.agent == otherGrabber:
                         agentActionList.append(agentAction)
                         actionList.pop(it)
                     else:
                         it = it + 1
             objectList.append(grabbedObj)
         # now we have all the move actions which want to move the same grabbed object - their direction must be the same
-        modelAction = agentActionList[0][1]
+        modelAction = agentActionList[0].action
         direction = modelAction.direction
 
-        for [agent, action] in agentActionList:
-            thisDir = action.direction
+        for performedAct in agentActionList:
+            thisDir = performedAct.action.direction
             if thisDir != direction:
                 return ActionGroup.empty()
-            objectList.append(agent)
+            objectList.append(performedAct.agent)
 
         # now we are sure that all agents want to do the same action on the same object
         return ActionGroup(modelAction, objectList)
